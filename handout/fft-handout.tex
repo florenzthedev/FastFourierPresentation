@@ -1,0 +1,475 @@
+% Must be compiled with lualatex and -shell-escape
+% gnuplot required
+\documentclass[12pt]{article}
+\usepackage{savetrees}
+\usepackage{parskip}
+
+\usepackage{fontspec}
+\setmainfont{ubuntu}[
+    Path        =   ../common/fonts/,
+    Extension   =   .ttf,
+    UprightFont =   *-R,
+    BoldFont    =   *-B,
+]
+\setmonofont{ubuntumono}[
+  Path          =   ../common/fonts/,
+  Extension     =   .ttf,
+  UprightFont   =   *-R,
+  BoldFont      =   *-B,
+]
+
+\input{../common/graphs.tex}
+
+\usepackage{multicol}
+\usepackage{amsmath}
+
+\usepackage[pdfusetitle]{hyperref}
+
+\title{The Fast Fourier Transform}
+\author{Zachary Todd Edwards}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{A Hard Problem}
+
+Lets say we have a wave that we want to find the component frequencies of:
+
+\newcommand{\myWave}[1]{sin(2*2*pi*#1) + sin(3*2*pi*#1)}
+\waveform{\myWave{x}}{0}{}
+
+We could try a brute force approach, look at the graphs of sums of sine waves until we get our original:
+
+\waveform{sin(1*2*pi*x) + sin(1*2*pi*x)}{0}{1Hz + 1Hz}
+\waveform{sin(1*2*pi*x) + sin(2*2*pi*x)}{0}{1Hz + 2Hz}
+\waveform{sin(1*2*pi*x) + sin(3*2*pi*x)}{0}{1Hz + 3Hz}
+\waveform{sin(2*2*pi*x) + sin(2*2*pi*x)}{0}{2Hz + 2Hz}
+\waveform{sin(2*2*pi*x) + sin(3*2*pi*x)}{0}{2Hz + 3Hz}
+%\waveform{sin(3*2*pi*x) + sin(3*2*pi*x)}{0}{3Hz + 3Hz}
+
+We made quite a few assumptions doing this though. We assumed that our wave's amplitude was centered on the horizontal axis and not shifted further up or down, we assumed the phase of our waves is perfect and not shifted left or right, we assumed all of the component frequencies are integers, and we would need to define a range of acceptable error or expect the input wave to be perfect. The first two might also be brute forcible but we are already dealing with a solution too complex to be practical.
+
+Lets try visualizing it in a different way by wrapping our waveform around the origin of a graph:
+
+\begin{multicols}{2}
+  \phasor{\myWave{t}}{1}{1}{Rotation Period = 1}
+  \phasor{\myWave{t}}{2}{1}{Rotation Period = 2}
+  \phasor{\myWave{t}}{3}{1}{Rotation Period = 3}
+  \phasor{\myWave{t}}{4}{1}{Rotation Period = 4}
+\end{multicols}
+
+The dot is the center or average of this wound up version of our waveform, and we can see that it is almost always very close to zero except when the rotation period is 3 or 2, which is also the component frequencies of our wave!
+
+\pagebreak
+
+\section{Euler's Formula}
+Okay thats great but what is the actual math behind this? Wrapping the function around the origin is not any simpler visually than brute forcing, and even though we only had to check each frequency once getting that average is an extra step. Also, what is rotation period and how do we change it? The axis labels have already given away part of the secret, these wrappings are being graphed on the complex plane!
+
+If you have spent any amount of time studying math you have likely ran into the so-called most beautiful equation in mathematics: $e^{i\pi}+1=0$. This is Euler's identity and its big cousin Euler's formula is the secret to this winding. How does it work though?  Why does $e^{i\pi}+1$ equal zero?
+
+\unitCircle
+
+The very short version is that it is a simplification of the full formula which is $e^{i\theta}=cos(\theta)+i\cdot sin(\theta)$. It is also worth noting that this is continuous and works for angles larger than $2\pi$ or less than 0.
+
+\pagebreak
+
+\section{Spiralling a Function}
+
+If Euler's formula always has a distance from the origin of 1 rotated by $\theta$ radians and multiplying anything by 1 is itself, could we just plug in our variable times $2\pi$ for $\theta$ and then multiply our function with that to wrap it around the origin? This is math, there is no way it could be that easy, could it?
+
+\begin{multicols}{2}
+  \polynomial{x}{$F(x)=x$}
+  \phasor{t}{1}{0}{$F(x)\cdot e^{ix2\pi}$ where $x \ge 0$}
+\end{multicols}
+
+It really is that easy! Above is a spiraled version of the equation $F(x) = x$, for positive x so it is more readable, we can see by looking at the positive real axis that for every one full rotation it increases by one unit of distance from the origin. This can be seen in all of the axes, with the other ones having quarter, half, and three-quarter offsets from the last integer.
+
+What about rotational period, what does that even mean? That is how many full rotations we do for one unit increase to the input of our original function, and how we can do this is already sneakily built in to the original formula, for a period of one we multiply $2\pi$ by one, for a period of two we multiply it by two, etc. If we omit $2\pi$ we get a rotation period of $\frac{1}{2\pi}$, we can think of it as dividing $2\pi$ by itself.
+
+\begin{multicols}{2}
+  \phasor{t}{2}{0}{$F(x)\cdot e^{ix2\cdot 2\pi}$ where $x \ge 0$}
+  \phasor{t}{3}{0}{$F(x)\cdot e^{ix3\cdot 2\pi}$ where $x \ge 0$}
+\end{multicols}
+
+\pagebreak
+
+\section{The Continuous Fourier Transform}
+
+There is one last piece needed to get our winding solution to work: the average. Conveniently for us we have a quick way of getting the total area under a curve, we can take its integral and divide by the total time the wave occupies:
+
+\begin{displaymath}
+  \hat{G}(f) = \frac{1}{N}\int_{0}^{N} G(x) \cdot e^{2\pi ifx}dx
+\end{displaymath}
+
+This works! When graphed we will get something like this:
+
+\fourierSpectrum[0.7\linewidth]{4}{6}{512}{\myWave{x}}{$\hat{G}(f)$ for $G(x) = sin(2 \cdot 2\pi x) + sin(3 \cdot 2\pi x)$}
+
+This is not quite the true Fourier transform though, there are a few adjustments to get there. The true Fourier transform does not take the average, just the total. With the average it is sometimes called the ``normalized Fourier transform.'' The Fourier transform also does not typically specify a time frame, and instead goes from $-\infty$ to $+\infty$, assuming that the wave itself needs to start and stop somewhere. The winding is also usually done in the clockwise direction, so the exponent is negated. Finally, the variable being integrated is usually $t$. With all this:
+
+\begin{displaymath}
+  \hat{G}(f) = \int_{-\infty}^{\infty} G(t) \cdot e^{-2\pi ift}dt
+\end{displaymath}
+
+There is just one problem: computers tend to not like continuity or infinity.
+
+\pagebreak
+
+\section{The Discrete Fourier Transform}
+
+Well if computers do not handle continuous functions very well then how will we get the input waveform in the first place, let alone process it? The answer might seem obvious, just take discrete points, also called samples, on the waveform at regular intervals and perform the Fourier transform on them. Lets try it, we will take a high number of samples from our original wave, wrap them around the origin, and sum up their results when multiplied with $e^{i\theta}$ at regular intervals.
+
+\waveform{\myWave{x}}{32}{32 samples across 4 seconds, for a sample rate of 8 per second.}
+
+\begin{multicols}{2}
+  \phasor{\myWave{t}}{3}{32}{Rotation Period = 3}
+  \phasor{\myWave{t}}{4}{32}{Rotation Period = 4}
+\end{multicols}
+{\begin{multicols}{2}
+  \raggedcolumns
+  The discrete version of the Fourier transform should be relatively easy to reverse engineer:
+  \begin{displaymath}
+    X_k = \sum_{n=0}^{N-1} x_n \cdot e^{-\frac{i2\pi}{N}kn}
+  \end{displaymath}
+  It is convention to use $x_n$ for the input set and $X_n$ for the output set, both of size $N$. We might also want to normalize the output:
+  \begin{displaymath}
+    X_k = \frac{1}{N} \sum_{n=0}^{N-1} x_n \cdot e^{-{\frac{i2\pi}{N}kn}}
+  \end{displaymath}
+  With all that we get the following for our graph:
+
+  \fourierSpectrum{4}{8}{32}{\myWave{x}}{}
+\end{multicols}}
+
+This doesn't look right, there are peaks at 2hz and 3hz but also 5hz and 6hz, and it looks symmetrical. What is going on?
+
+\pagebreak
+
+\section{Nyquist-Shannon}
+
+Our graph of the discrete Fourier transform above is actually correct, but the oddness in its results hints at a deeper problem we are bumping up against: how do we know how many points are enough?
+
+\criticalFrequency{}
+
+All of these waveforms have the same samples at the same sample rate. The problem is not just that these different waves produce the same samples in this one case, its that these samples have many different waves that could fit them. It gets worse, there are infinitely many waveforms that could fit any set of discrete points, we need to know some constraints on the waveform coming in in order to do anything useful with the samples.
+
+The symmetry of our spectrum graphs above actually give us a hint about it, here is one with double the sample rate:
+\fourierSpectrum[0.5\linewidth]{4}{16}{64}{\myWave{x}}{}
+The results got more accurate, as expected, but the center of symmetry doubled as well. This ``center of symmetry'' is called the Nyquist limit, and is the highest frequency that discrete samples can represent without a loss in fidelity. Conveniently the Nyquist limit is just half of our sample rate, non-inclusive. The symmetrical second half is the complex-conjugate of the first half, and is usually ignored when working with real-numbered inputs.
+
+Which frequency a particular index corresponds to, its frequency bin, can be gotten with $k\frac{f_s}{N}$
+where $k$ is the index of the result, $f_s$ is the sample rate per-second, and $N$ is the total number of samples. The magnitude, absolute value, of each entry is usually what is graphed in charts like the ones above. The imaginary part of each entry tells us that frequency's phase, how much it is shifted left or right.
+\pagebreak
+
+\section{Complex Programming}
+
+Before we can start translating this math into code there is one last hurdle: how do we write programs with complex numbers? The good news is that most programming languages include complex numbers as part of their standard library, or as part of a common third party library.
+
+C does some macro magic to ``overload'' the operators for complex types, but cannot overload the functions so there is a separate set of math functions for them, as well as a few macros for assignment:
+\begin{lstlisting}
+  #include <complex.h>
+  void dft(double complex *x, double complex *X, int N){
+    for(int i = 0; i < N; i++)
+      X[i] = CMPLX(0.0, 0.0);
+
+    for(int k = 0; k < N; k++)
+      for(int n = 0; n < N; n++)
+        X[k] += x[n] * cexp(-(((I * 2 * M_PI) / N) * k * n));
+  }
+\end{lstlisting}
+
+C++ is similar but uses templates:
+\begin{lstlisting}
+  #include <complex>
+  void dft(std::complex<double> *x, std::complex<double> *X, int N){
+    for(int i = 0; i < N; i++)
+      X[i] = {0.0, 0.0};
+
+    for(int k = 0; k < N; k++)
+      for(int n = 0; n < N; n++)
+        X[k] += x[n] * std::exp(-(((1.0i * 2 * M_PI) / N) * k * n));
+  }
+\end{lstlisting}
+
+Perl:
+\begin{lstlisting}[language=Perl]
+  use Math::Complex;
+  sub DFT{
+    my ($x, $X) = @_;
+    my $N = scalar(@$x);
+    @$X = ();
+
+    for(my $k = 0; $k < $N; $k++){
+      for(my $n = 0; $n < $N; $n++){
+        $$X[$k] += $$x[$n] * exp(-(((i * 2 * pi) / $N) * $k * $n));
+      }
+    }
+  }
+\end{lstlisting}
+
+The complexity of this algorithm is $O(N^2)$, however, and we are going to want to be able to process frequencies in the gigahertz range. To make this practical we need to somehow speed this up.
+
+\pagebreak
+
+\section{A Simpler Problem}
+Lets tackle a similar but simpler problem, how can we get a set of points on a polynomial?
+
+Say we have a class for our points that looks like:
+\begin{lstlisting}
+  class point{
+    double x, y;
+    point(_x, _y) : x(_x), y(_y){}
+  };
+\end{lstlisting}
+
+Next our function prototype looks like:
+\begin{lstlisting}
+  vector<point> polynomial(int degree, double coefficients[], int n);
+\end{lstlisting}
+
+We might try to use the brute force method:
+\begin{lstlisting}
+  vector<double> points(n);
+  for(int x = 0; x < n; x++){
+    double y = coefficients[0];
+    for(int j = 1; j <= degree; j++){
+      y += coefficients[j] * pow(x,j);
+    }
+    points[x] = point(x,y);
+  }
+  return samples;
+\end{lstlisting}
+However, this takes $O(nk)$ time where n is the degree of the polynomial and k is the number of samples needed, this is also not counting the not-insignificant time pow() can take. Is there a faster way?
+
+\section{Symmetry}
+Lets look at a few graphs of polynomials:
+
+\begin{multicols}{2}
+
+  \polynomial{2*x}{$F(x)=2x$}
+  \polynomial{1/2*x^2}{$F(x)=\frac{1}{2} x^2$}
+  \polynomial{x^2+x^3}{$F(x)=x^2+x^3$}
+  \polynomial{3*x^3-x^4}{$F(x)=3x^3-x^4$}
+  \polynomial{x+(1/3)*x^3}{$F(x)=x+\frac{1}{3}x^3$}
+  \polynomial{x^4+1}{$F(x)=1+x^4$}
+
+\end{multicols}
+
+Some of these are symmetrical across the vertical axis, some of them are symmetrical across both axes, and some of them look almost symmetrical but aren't quite. What is the difference in the polynomials that are symmetrical and those that aren't?
+
+The polynomials with only even-powered terms or odd-powered terms are symmetrical, with the former being across the vertical axis: $F(x) = F(-x)$, and the latter being symmetrical across both: $F(x) = -F(-x)$. Most polynomials don't only contain terms of the same parity, so how can we take advantage of this?
+
+\pagebreak
+
+\section{Polynomial Decomposition}
+
+Lets take the following rather wooly polynomial:
+
+\polynomial[0.6\textwidth]{x-3*x^2+2*x^3+4*x^4+x^5-1}{$F(x)=-1x-3x^2+2x^3+4x^4+x^5$}
+
+Lets try separating it into its odd and even terms:
+
+\begin{multicols}{2}
+  \polynomial{-1-3*x^2+4*x^4}{$F_e(x)=-1-3x^2+4x^4$}
+  \polynomial{x+2*x^3+x^5}{$F_o(x)=x+2x^3+x^5$}
+\end{multicols}
+
+These are both symmetrical and when added together we get our original polynomial, we might be able to work with this.
+
+\pagebreak
+
+Lets try writing another algorithm to take advantage of this, to try to keep it as simple as possible we will assert that n, the number of points we want, is even:
+
+\begin{lstlisting}
+  vector<point> points;
+  assert(!(n % 2));
+  for(int x = 1; x <= n / 2; x++){
+    double yp = coefficients[0];
+    double yn = coefficients[0];
+    for(int j = 1; j <= degree; j++){
+      double term = pow(x,j);
+      yp += term;
+      yn += (j % 2) ? -term : term;
+    }
+    points.push_back(point(x,yp));
+    points.push_back(point(-x,yn));
+  }
+  return points;
+\end{lstlisting}
+
+Gross! Not only is this inelegant, it does not save us that much time either; asymptotically it is the same. Lets go back to our polynomials and see what more we can squeeze out of them.
+
+We can factor an $x$ out of the odd terms so that we get $F_o(x)=x(1+2x^2+x^4)$ or $x F_o(x)=1+2x^2+x^4$. Putting this together we get $F(x) = F_e(x) + xF_o(x)$ and now that $F_o(x)$ is all even terms it would be the same for positive and negative inputs. This could possibly eliminate the ternary operator above which might benefit performance a bit, but we are still stuck with the same complexity. To get any noticeable benefit we need a way to do this recursively.
+
+We can start by trying to make $F_e(x)$ and $F_o(x)$ polynomials with their own odd and even terms. All of the terms in each of these are even, so we could divide the exponents by two and square the inputs. This gives us $F_e(x)=-1-3x+4x^2$ and $F_o(x)=1+2x+x^2$ resulting in our original polynomial being $F(x) = F_e(x^2) + x F_o(x^2)$.
+
+We have a new problem now though; if we try to recursively apply this method our input is always positive or zero after the first decomposition because it was squared, so the variable we factor out of the odd term polynomial will always be positive, and the whole point of separating out the odd and even terms in the first place was that they behaved differently with negative inputs. There is also the problem of magnitude, this repeated squaring of the inputs actually breaks the equivalence if we try to apply it more than once. We have two inputs that cooperate with this method, 0 and 1, since they are already positive and their squares have the same magnitude, what we need are more ones. We used the complex exponential $e^{ix}$ as a kind of ``1'' before, would it work here?
+\pagebreak
+
+\section{The Roots of Unity}
+
+\rootsOfUnity
+
+For real numbers, $\sqrt{1}$ has two answers, 1 and -1, and this is true for complex numbers as well. Higher roots get more interesting, for real numbers $\sqrt[3]{1}$ has only one answer which is 1, however for complex numbers $\sqrt[3]{1}$ has three answers: 1, $e^\frac{i2\pi}{3}$, $e^\frac{i4\pi}{3}$. Higher roots have more complex results; the n-th root of 1 has n complex values and these are the roots of unity. The first root of unity after 1 is generally denoted with $\omega$ (omega), and the j-th root of unity for the n-th complex root of 1 would be $\omega_n^j$.
+
+The roots of unity have a few useful properties: they always add up to zero, their absolute value is always one, all equivalent ratios of $j$ and $n$ for $\omega_n^j$ are equivalent eg $\omega_8^2 = \omega_4^1$, negation ``flips'' their position eg $-\omega_8^1 = \omega_8^5$, and they are cyclical when raised to a power or multiplied eg ${\omega_8^3}^{10} = \omega_8^3 \cdot \omega_8^{10} = \omega_8^{30} = \omega_8^6$. Since getting the square root of a complex number is relatively trivial these properties lets us quickly get power-of-two-first-roots of unity by repeatedly getting the square root (raising to the power of $\frac{1}{2}$) of $\omega$.
+
+The roots of unity can also be calculated using $e^\frac{i2\pi j}{n}$, this is equivalent to the exponential used in the discrete transform.
+
+\pagebreak
+
+Complex numbers can be written as $a + bi$, with this the formula for getting the square root of a complex number is:
+\begin{displaymath}
+  \sqrt{a+ib} = \pm\left(\sqrt{\frac{|z| + a}{2}} + i\sqrt{\frac{|z| - a}{2}}\right) \text{ when } b \ge 0
+\end{displaymath}
+\begin{displaymath}
+  \sqrt{a+ib} = \pm\left(\sqrt{\frac{|z| + a}{2}} - i\sqrt{\frac{|z| - a}{2}}\right) \text{ when } b < 0
+\end{displaymath}
+
+The absolute value of a complex number is $\sqrt{a^2+b^2}$ and squaring a complex number is the same as real algebra, keeping an eye our for anytime an $i$ gets squared to replace it with -1. If we are only dealing with $a + bi$ we can treat it like a binomial and the squaring formula is $a^2 - b^2 + 2abi$. Lets run through a few examples to see all of this in action:
+
+\begin{multicols}{2}
+  \null \vfill
+  \begin{align*}
+    \sqrt{1} & = \sqrt{\frac{|1| + 1}{2}} + i\sqrt{\frac{|1| - 1}{2}} \\
+             & = \sqrt{\frac{2}{2}} + i\sqrt{\frac{2}{2}}             \\
+             & = \sqrt{1} + i\sqrt{0}                                 \\
+             & = -1 + 0i
+  \end{align*}
+  \vfill \null
+  \columnbreak
+  \null \vfill
+  \begin{align*}
+    (-1 + 0i)^2 & = (-1)^2 - (0)^2 + 2(-1)(0)i \\
+                & = 1 - 0 + 0i                 \\
+                & = 1                          \\
+  \end{align*}
+  \vfill \null
+\end{multicols}
+\begin{multicols}{2}
+  \null \vfill
+  \begin{align*}
+    \sqrt{-1} & = \sqrt{\frac{|-1| + -1}{2}} + i\sqrt{\frac{|-1| - -1}{2}} \\
+              & = \sqrt{\frac{0}{2}} + i\sqrt{\frac{2}{2}}                 \\
+              & = \sqrt{0} + i\sqrt{1}                                     \\
+              & = 0 + 1i = i
+  \end{align*}
+  \vfill \null
+  \columnbreak
+  \null \vfill
+  \begin{align*}
+    i^2 = (0 + 1i)^2 & = (0)^2 - (1)^2 + 2(0)(1)i \\
+                     & = 0 - 1 + 0i               \\
+                     & = -1
+  \end{align*}
+  \vfill \null
+\end{multicols}
+\begin{multicols}{2}
+  \null \vfill
+  \begin{align*}
+    \sqrt{i} = \sqrt{0+1i} & = \sqrt{\frac{|0+1i| + 0}{2}} + i\sqrt{\frac{|0+1i| - 0}{2}} \\
+                           & = \sqrt{\frac{1}{2}} + i\sqrt{\frac{1}{2}}                   \\
+                           & = \frac{1}{\sqrt{2}} + \frac{i}{\sqrt{2}}                    \\
+                           & = \frac{1+i}{\sqrt{2}}
+  \end{align*}
+  \vfill \null
+  \columnbreak
+  \null \vfill
+  \begin{align*}
+    \left(\frac{1+i}{\sqrt{2}}\right)^2 & = \frac{1+i}{\sqrt{2}} \cdot \frac{1+i}{\sqrt{2}} \\
+                                        & = \frac{(1+i)(1+i)}{\sqrt{2}\cdot\sqrt{2}}        \\
+                                        & = \frac{1+2i+i^2}{2}                              \\
+                                        & = \frac{1+2i-1}{2}                                \\
+                                        & = \frac{2i}{2}                                    \\
+                                        & = i
+  \end{align*}
+  \vfill \null
+\end{multicols}
+
+\section{The Fast Fourier Transform}
+Putting all of this together:
+\begin{center}
+  \begin{tabular}{llll}
+    $F(x)$      & \multicolumn{2}{l}{$= -1+x-3x^2+2x^3+4x^4+x^5$} & $=F_e(x^2)+xF_o(x^2)$                                \\
+    $F_e(x)$    & $=-1-3x+4x^2$                                   &                       & $=F_{ee}(x^2)+xF_{eo}(x^2)$  \\
+    $F_o(x)$    & $=1+2x+x^2$                                     &                       & $= F_{oe}(x^2)+xF_{oo}(x^2)$ \\
+    $F_{ee}(x)$ & $=-1+4x$                                        & $F_{eo}(x)=-3$        &                              \\
+    $F_{oe}(x)$ & $=1+x$                                          & $F_{oo}(x)=2$         &                              \\
+  \end{tabular}
+\end{center}
+
+Plugging in our roots of unity:
+\begin{center}
+  \begin{tabular}{ll | ll | ll}
+    $F_{ee}(1)$  & $= 3$  & $F_e(1)$  & $= 0$       & $F(1)$         & $= 4$                    \\
+    $F_{ee}(-1)$ & $= -5$ & $F_e(i)$  & $= 5 - 3i$  & $F(\omega)$    & $= - 5 - 3i + 2\omega i$ \\
+    $F_{eo}(1)$  & $= -3$ & $F_e(-1)$ & $= 6$       & $F(i)$         & $= 6$                    \\
+    $F_{eo}(-1)$ & $= -3$ & $F_e(-i)$ & $= -5 + 3i$ & $F(\omega i)$  & $= - 5 + 3i + 2\omega$   \\
+    $F_{oe}(1)$  & $= 1$  & $F_o(1)$  & $= 2 + 2$   & $F(-1)$        & $= -4$                   \\
+    $F_{oe}(-1)$ & $= 0$  & $F_o(i)$  & $= 2i$      & $F(-\omega)$   & $= - 5 - 3i - 2\omega i$ \\
+    $F_{oo}(1)$  & $= 2$  & $F_o(-1)$ & $= 0$       & $F(-i)$        & $= 6$                    \\
+    $F_{oo}(-1)$ & $= 2$  & $F_o(-i)$ & $= -2i$     & $F(-\omega i)$ & $= - 5 + 3i - 2\omega$   \\
+  \end{tabular}
+\end{center}
+
+Lets compare these answers to the results of the discrete Fourier transform for the same input set, we can pad in input set with 0s to get the discrete Fourier transform to output the same number of values, these are equivalent to coefficients of 0 for higher degree terms so it does not effect the value of the polynomial. We effectively were already doing this above.
+\begin{center}
+  \begin{tabular}{ |c|c|c|c|c|c|c|c|c| }
+    \hline
+    Input  & -1 & 1           & -3 & 2           & 4  & 1           & 0 & 0           \\
+    \hline
+    Output & 4  & -6.41-1.59i & 6  & -3.59+4.41i & -4 & -3.59-4.41i & 6 & -6.41+1.59i \\
+    \hline
+  \end{tabular}
+\end{center}
+
+It is a perfect match, and with $O(NlogN)$ complexity! Lets write some code to calculate this, since the FFT can be calculated in-place X will be used as the input and overwritten:
+\begin{lstlisting}
+  #include <complex>
+  void fft(std::complex<double> *X, int N){
+    std::complex<double> omega = -1;
+    for (int n = 2; n <= N; n *= 2){
+      for (int k = 0; k < N; k += n){
+        for (int j = 0; j < n / 2; j++) {
+          std::complex<double> product = std::pow(omega,j) * X[k + j + n / 2];
+          X[k + j + n / 2] = X[k + j] - product;
+          X[k + j] = X[k + j] + product;
+        }
+      }
+      omega = std::sqrt(omega);
+    }
+  }
+\end{lstlisting}
+
+Lets run it and see what it does:
+
+\begin{center}
+  \begin{tabular}{ |c|c|c|c|c|c|c|c|c| }
+    \hline
+    Input  & -1 & 1        & -3       & 2         & 4  & 1         & 0        & 0        \\
+    \hline
+    Output & 4  & 0.1-2.9i & 1.0+5.0i & -4.1+7.1i & -6 & -4.1-7.1i & 1.0-5.0i & 0.1+2.9i \\
+    \hline
+  \end{tabular}
+\end{center}
+
+This is not correct! This code is actually good, there is just one more thing we are missing.
+
+\pagebreak
+
+\butterfly{8}
+
+If we actually draw out how values are reused we get something like the above, usually called a butterfly diagram. Each of the sets of arrows are sometimes called a ``butterfly operation.'' The part we are missing is the input ordering, we need to get the inputs in their order after the recursive even/odd separating. Alternatively we could do the operations backwards, start with the inputs in-order and do the size $N$ butterfly operation then the size $\frac{N}{2}$ butterfly operation and so on, but then the output would be in this peculiar ordering anyway and we would have to get the first 8th root of unity from the start instead of being able to take the square root each pass. This ordering is actually a little insidious, take a second to see if you can figure out a non-recursive way to describe the ordering.
+
+The ordering is called bit-reversal-permutation, the index of each element in this ordering is the bits of the original index reversed. With the input in this order we, at last, get:
+\begin{center}
+  \begin{tabular}{ |c|c|c|c|c|c|c|c|c| }
+    \hline
+    Input  & -1 & 1           & -3 & 2           & 4  & 1           & 0 & 0           \\
+    \hline
+    Output & 4  & -6.41-1.59i & 6  & -3.59+4.41i & -4 & -3.59-4.41i & 6 & -6.41+1.59i \\
+    \hline
+  \end{tabular}
+\end{center}
+
+\end{document}

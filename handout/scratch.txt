@@ -1,0 +1,41 @@
+%Things that were removed but might be useful later
+\begin{footnotesize}
+  \begin{equation*}
+    \begin{aligned}[c]
+      F(1)            & = F_e(1) + F_o(1)                                               \\
+                      & = F_{ee}(1) + F_{eo}(1) + F_{oe}(1) + F_{oo}(1)                 \\
+                      & = 3 - 3 + 2 + 2                                                 \\
+                      & = 4                                                             \\
+      F(\omega_8^1)   & = F_e(i) + \omega F_o(i)                                        \\
+                      & = F_{ee}(-1) + iF_{eo}(-1) + \omega (F_{oe}(-1) + iF_{oo}(-1))  \\
+                      & = - 5 - 3i + \omega(0 + 2i)                                     \\
+                      & = - 5 - 3i + 2\omega i \approx -6.41 - 1.59i                    \\
+      F(i)            & = F_e(-1) + iF_o(-1)                                            \\
+                      & = F_{ee}(1) - F_{eo}(1) + i(F_{oe}(1) - F_{oo}(1))              \\
+                      & = 3 + 3 + i(2 - 2)                                              \\
+                      & = 6                                                             \\
+      F(\omega_8^1 i) & = F_e(-i) + \omega iF_o(-i)                                     \\
+                      & = F_{ee}(-1) - iF_{eo}(-1) + \omega i(F_{oe}(-1) - iF_{oo}(-1)) \\
+                      & = - 5 + 3i + \omega i(0 - 2i)                                   \\
+                      & = - 5 + 3i + 2\omega \approx -3.59 + 4.41i                      \\
+    \end{aligned}
+    \begin{aligned}[c]
+      F(-1)            & = F_e(1) - F_o(1)                                               \\
+                       & = F_{ee}(1) + F_{eo}(1) - (F_{oe}(1) + F_{oo}(1))               \\
+                       & = 3 - 3 - (2 + 2)                                               \\
+                       & = -4                                                            \\
+      F(-\omega_8^1)   & = F_e(i) - \omega F_o(i)                                        \\
+                       & = F_{ee}(-1) + iF_{eo}(-1) - \omega (F_{oe}(-1) + iF_{oo}(-1))  \\
+                       & = - 5 - 3i - \omega(0 + 2i)                                     \\
+                       & = - 5 - 3i - 2\omega i \approx -3.59 -4.41i                     \\
+      F(-i)            & = F_e(-1) - iF_o(-1)                                            \\
+                       & = F_{ee}(1) - F_{eo}(1) - i(F_{oe}(1) - F_{oo}(1))              \\
+                       & = 3 + 3 - i(2 - 2)                                              \\
+                       & = 6                                                             \\
+      F(-\omega_8^1 i) & = F_e(-i) - \omega iF_o(-i)                                     \\
+                       & = F_{ee}(-1) - iF_{eo}(-1) - \omega i(F_{oe}(-1) - iF_{oo}(-1)) \\
+                       & = - 5 + 3i - \omega i(0 - 2i)                                   \\
+                       & = - 5 + 3i - 2\omega \approx -6.41 + 1.59i                      \\
+    \end{aligned}
+  \end{equation*}
+\end{footnotesize}
