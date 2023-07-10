@@ -19,6 +19,7 @@
   Extension     =   .ttf,
   UprightFont   =   *-R,
   BoldFont      =   *-B,
+  ItalicFont    =   *-RI,
 ]
 
 \input{../common/graphs.tex}
@@ -183,10 +184,12 @@ C does some macro magic to ``overload'' the operators for complex types, but can
 
 C++ is similar but uses templates:
 \begin{lstlisting}
+  #include <vector>
   #include <complex>
-  void dft(std::complex<double> *x, std::complex<double> *X, int N){
-    for(int i = 0; i < N; i++)
-      X[i] = {0.0, 0.0};
+  void dft(std::vector<std::complex<double>> &x, 
+           std::vector<std::complex<double>> &X, int N){
+    X.clear();
+    X.resize(N, 0);
 
     for(int k = 0; k < N; k++)
       for(int n = 0; n < N; n++)
@@ -330,43 +333,6 @@ Complex numbers can be written as $a + bi$, with this the formula for getting th
 \end{displaymath}
 
 The absolute value of a complex number is $\sqrt{a^2+b^2}$ and squaring a complex number is the same as real algebra, keeping an eye our for anytime an $i$ gets squared to replace it with -1. If we are only dealing with $a + bi$ we can treat it like a binomial and the squaring formula is $a^2 - b^2 + 2abi$. Lets run through a few examples to see all of this in action:
-
-\begin{multicols}{2}
-  \null \vfill
-  \begin{align*}
-    \sqrt{1} & = \sqrt{\frac{|1| + 1}{2}} + i\sqrt{\frac{|1| - 1}{2}} \\
-             & = \sqrt{\frac{2}{2}} + i\sqrt{\frac{2}{2}}             \\
-             & = \sqrt{1} + i\sqrt{0}                                 \\
-             & = -1 + 0i
-  \end{align*}
-  \vfill \null
-  \columnbreak
-  \null \vfill
-  \begin{align*}
-    (-1 + 0i)^2 & = (-1)^2 - (0)^2 + 2(-1)(0)i \\
-                & = 1 - 0 + 0i                 \\
-                & = 1                          \\
-  \end{align*}
-  \vfill \null
-\end{multicols}
-\begin{multicols}{2}
-  \null \vfill
-  \begin{align*}
-    \sqrt{-1} & = \sqrt{\frac{|-1| + -1}{2}} + i\sqrt{\frac{|-1| - -1}{2}} \\
-              & = \sqrt{\frac{0}{2}} + i\sqrt{\frac{2}{2}}                 \\
-              & = \sqrt{0} + i\sqrt{1}                                     \\
-              & = 0 + 1i = i
-  \end{align*}
-  \vfill \null
-  \columnbreak
-  \null \vfill
-  \begin{align*}
-    i^2 = (0 + 1i)^2 & = (0)^2 - (1)^2 + 2(0)(1)i \\
-                     & = 0 - 1 + 0i               \\
-                     & = -1
-  \end{align*}
-  \vfill \null
-\end{multicols}
 \begin{multicols}{2}
   \null \vfill
   \begin{align*}
@@ -388,6 +354,31 @@ The absolute value of a complex number is $\sqrt{a^2+b^2}$ and squaring a comple
   \end{align*}
   \vfill \null
 \end{multicols}
+
+C and C++ complex square roots handle multiple possible results by making a ``branch cut along the negative real axis.'' If we visualize the square root rotating a number around the complex plane, if it has multiple results it will favor the one that does not cross the negative real axis. Putting all of this together we can generate a list of first roots-of-unity like this:
+\begin{lstlisting}
+std::vector<std::complex<double>> gen_omegas(long N, bool inverse) {
+  int Nth = (bit_length(N) - 1); // log_2(N)
+  std::vector<std::complex<double>> omegas;
+  omegas.push_back(-1 + 0i);
+  omegas.push_back(0  - 1i);
+  for (int j = 2; j < Nth; j++) omegas.push_back(std::sqrt(omegas[j - 1]));
+  if (inverse)
+    for (int j = 1; j < Nth; j++) omegas[j] = std::conj(omegas[j]);
+  return omegas;
+}
+\end{lstlisting}
+
+\texttt{bit\_length(x)} is the number of bits required to represent a number and that is the integer $log_2(x) + 1$. This is much faster than using the floating-point log functions, most modern CPUs can do this in a single instruction. We can implement this in C++20, otherwise compiler intrinsics need to be used:
+\begin{lstlisting}
+#include <bits>
+#include <climits>
+int bit_length(unsigned long){
+  return (CHAR_BIT * sizeof N) - std::countl_zero(x);
+}
+\end{lstlisting}
+
+\pagebreak
 
 \section{The Fast Fourier Transform}
 Putting all of this together:
@@ -428,18 +419,20 @@ Lets compare these answers to the results of the discrete Fourier transform for 
 
 It is a perfect match, and with $O(NlogN)$ complexity! Lets write some code to calculate this, since the FFT can be calculated in-place X will be used as the input and overwritten:
 \begin{lstlisting}
-  #include <complex>
-  void fft(std::complex<double> *X, int N){
-    std::complex<double> omega = -1;
-    for (int n = 2; n <= N; n *= 2){
-      for (int k = 0; k < N; k += n){
-        for (int j = 0; j < n / 2; j++) {
-          std::complex<double> product = std::pow(omega,j) * X[k + j + n / 2];
+  void fft(std::vector<std::complex<double>> omegas, 
+           std::vector<std::complex<double>> &X, long N) {
+    assert((N & (N - 1)) == 0);
+    for (long n = 2; n <= N; n *= 2) {
+      std::complex<double> omega = omegas[bit_length(n) - 2];
+      std::complex<double> root_of_unity = 1;
+      for (long j = 0; j < n / 2; j++) {
+        for (long k = 0; k < N; k += n) {
+          std::complex<double> product = root_of_unity * X[k + j + n / 2];
           X[k + j + n / 2] = X[k + j] - product;
           X[k + j] = X[k + j] + product;
         }
+        root_of_unity *= omega;
       }
-      omega = std::sqrt(omega);
     }
   }
 \end{lstlisting}
