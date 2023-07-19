@@ -235,7 +235,7 @@ Next our function prototype looks like:
 
 We might try to use the brute force method:
 \begin{lstlisting}
-  vector<double> points(n);
+  std::vector<double> points(n);
   for(int x = 0; x < n; x++){
     double y = coefficients[0];
     for(int j = 1; j <= degree; j++){
@@ -287,7 +287,7 @@ These are both symmetrical and when added together we get our original polynomia
 Lets try writing another algorithm to take advantage of this, to try to keep it as simple as possible we will assert that n, the number of points we want, is even:
 
 \begin{lstlisting}
-  vector<point> points;
+  std::vector<point> points;
   assert(!(n % 2));
   for(int x = 1; x <= n / 2; x++){
     double yp = coefficients[0];
