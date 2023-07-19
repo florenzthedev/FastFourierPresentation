@@ -318,9 +318,16 @@ We have a new problem now though; if we try to recursively apply this method our
 
 For real numbers, $\sqrt{1}$ has two answers, 1 and -1, and this is true for complex numbers as well. Higher roots get more interesting, for real numbers $\sqrt[3]{1}$ has only one answer which is 1, however for complex numbers $\sqrt[3]{1}$ has three answers: 1, $e^\frac{i2\pi}{3}$, $e^\frac{i4\pi}{3}$. Higher roots have more complex results; the n-th root of 1 has n complex values and these are the roots of unity. The first root of unity after 1 is generally denoted with $\omega$ (omega), and the j-th root of unity for the n-th complex root of 1 would be $\omega_n^j$.
 
-The roots of unity have a few useful properties: they always add up to zero, their absolute value is always one, all equivalent ratios of $j$ and $n$ for $\omega_n^j$ are equivalent eg $\omega_8^2 = \omega_4^1$, negation ``flips'' their position eg $-\omega_8^1 = \omega_8^5$, and they are cyclical when raised to a power or multiplied eg ${\omega_8^3}^{10} = \omega_8^3 \cdot \omega_8^{10} = \omega_8^{30} = \omega_8^6$. Since getting the square root of a complex number is relatively trivial these properties lets us quickly get power-of-two-first-roots of unity by repeatedly getting the square root (raising to the power of $\frac{1}{2}$) of $\omega$.
+The roots of unity have a few useful properties: 
+\begin{itemize}
+  \item They always add up to zero.
+  \item Their absolute value is always one.
+  \item All equivalent ratios of $j$ and $n$ for $\omega_n^j$ are equivalent; e.g., $\omega_8^2 = \omega_4^1$.
+  \item Negation ``flips'' their position; e.g., $-\omega_8^1 = \omega_8^5$.
+  \item They are cyclical when raised to a power or multiplied; e.g., ${\omega_8^3}^{10} = \omega_8^3 \cdot \omega_8^{10} = \omega_8^{30} = \omega_8^6$.
+\end{itemize}
 
-The roots of unity can also be calculated using $e^\frac{i2\pi j}{n}$, this is equivalent to the exponential used in the discrete transform.
+Since getting the square root of a complex number is relatively trivial these properties lets us quickly get power-of-two-first-roots of unity by repeatedly getting the square root (raising to the power of $\frac{1}{2}$) of $\omega$. The roots of unity can also be calculated using $e^\frac{i2\pi j}{n}$, this is equivalent to the exponential used in the discrete transform.
 
 \pagebreak
 
